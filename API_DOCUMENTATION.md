@@ -24,7 +24,7 @@
 ### Subscribe
 - **Endpoint**: `/subscribers/subscribe`
 - **Method**: POST
-- **Authentication**: Requires signature verification
+- **Authentication**: Signature verification required
 - **Request Body**: Subscriber details
 - **Response**: Subscriber status
 - **Functionality**:
@@ -34,171 +34,139 @@
   - Can handle multiple domains
   - Triggers async subscription tasks
 
-### Disable Subscriber
-- **Endpoint**: `/subscribers/disable`
-- **Method**: POST
-- **Authentication**: Requires signature verification
-- **Request Body**: Subscriber details
-- **Response**: Updated subscriber status
-- **Functionality**:
-  - Disables/unsubscribes a subscriber
-  - Verifies the subscriber's signature
-  - Updates subscriber status to UNSUBSCRIBED
+#### Detailed Subscribe Endpoint Documentation
 
-### Lookup Subscribers
-- **Endpoint**: `/subscribers/lookup`
-- **Method**: GET
-- **Authentication**: No login required
-- **Query Parameters**: Search criteria
-- **Response**: Matching subscribers
-- **Functionality**:
-  - Searches for subscribers based on criteria
-  - Supports pagination
-  - Returns matching subscribers with their details
+##### Request Flow and Checks
 
-### Key Generation
-- **Generate Signature Keys**: `/subscribers/generateSignatureKeys`
-- **Generate Encryption Keys**: `/subscribers/generateEncryptionKeys`
-- **Method**: GET
-- **Authentication**: No login required
-- **Response**: Generated keys
-- **Functionality**: Generates new cryptographic keys for subscribers
+1. **Initial Request Processing**
+   - Reads raw request body
+   - Captures complete request payload for processing
 
-## Document Management APIs
+2. **Authorization Header Processing**
+   - Validates presence of Authorization header
+   - Extracts parameters:
+     - `pub_key_id`
+     - `subscriber_id`
+   - Failure Condition: Empty authorization parameters
+   - Error Message: "Signature Verification failed"
 
-### Submitted Documents
-- **Base Endpoint**: `/submitted_documents`
-- **Methods**:
-  - GET `/submitted_documents` - List all submitted documents
-  - GET `/submitted_documents/{id}` - Get specific document
-  - POST `/submitted_documents` - Submit new document
-  - PUT `/submitted_documents/{id}` - Update document
-  - DELETE `/submitted_documents/{id}` - Delete document
-  - POST `/submitted_documents/{id}/approve` - Approve document
-  - POST `/submitted_documents/{id}/reject` - Reject document
-- **Authentication**: Required
-- **Functionality**: Manages document submission and verification
+3. **Key Verification**
+   - Verifies key exists and is verified
+   - Database Operation: Queries `ParticipantKey` table
+   - Failure Condition: Key not found or not verified
+   - Error Message: "Your signing key is not verified by the registrar!"
 
-### Verifiable Documents
-- **Base Endpoint**: `/verifiable_documents`
-- **Methods**:
-  - POST `/verifiable_documents/{id}/approve` - Approve document
-  - POST `/verifiable_documents/{id}/reject` - Reject document
-- **Authentication**: Required
-- **Functionality**: Handles document verification and approval/rejection
+4. **Subscriber Identity Verification**
+   - Verifies key belongs to the subscriber
+   - Database Operation: Queries `NetworkRole` table
+   - Failure Condition: Key not associated with subscriber
+   - Error Message: "Key signed with is not registered against you"
 
-## Network Management APIs
+5. **Signature Verification**
+   - Validates request signature
+   - Parameters:
+     - Header name: "Authorization"
+     - Headers: All request headers
+     - Strict mode: true
+   - Failure Condition: Invalid signature
+   - Error Message: "Signature Verification failed"
 
-### Network Domains
-- **Base Endpoint**: `/network_domains`
-- **Methods**:
-  - GET `/network_domains` - List all network domains
-  - GET `/network_domains/{id}` - Get specific domain
-  - POST `/network_domains` - Create domain
-  - PUT `/network_domains/{id}` - Update domain
-  - DELETE `/network_domains/{id}` - Delete domain
-- **Authentication**: Required
-- **Functionality**: Manages network domains
+6. **Payload Processing**
+   - Parses and validates JSON payload
+   - Handles:
+     - Single subscriber requests
+     - Multiple subscriber requests
+   - Data Structure: Converts to `Subscribers` object
 
-### Network Participants
-- **Base Endpoint**: `/network_participants`
-- **Methods**:
-  - GET `/network_participants` - List all participants
-  - GET `/network_participants/{id}` - Get specific participant
-  - POST `/network_participants` - Create participant
-  - PUT `/network_participants/{id}` - Update participant
-  - DELETE `/network_participants/{id}` - Delete participant
-  - POST `/network_participants/{id}/claim` - Initiate claim request
-- **Authentication**: Required
-- **Functionality**: Manages network participants and their claims
+7. **Empty Payload Handling**
+   - Handles empty subscriber list
+   - Actions:
+     - Triggers async subscription if needed
+     - Returns current status
 
-### Claim Requests
-- **Base Endpoint**: `/claim_requests`
-- **Methods**:
-  - POST `/claim_requests/{id}/verify_domain` - Verify domain ownership
-- **Authentication**: Required
-- **Functionality**: Handles domain verification for claims
+8. **Subscriber Processing**
+   For each subscriber in the request:
 
-## Geographic Management APIs
+   a. **Domain Validation**
+      - Normalizes domain information
+      - Handles:
+        - Single domain
+        - Multiple domains
+        - No domains
 
-### Countries
-- **Base Endpoint**: `/countries`
-- **Methods**:
-  - GET `/countries` - List all countries
-  - GET `/countries/{id}` - Get specific country
-  - POST `/countries` - Create country
-  - PUT `/countries/{id}` - Update country
-  - DELETE `/countries/{id}` - Delete country
-- **Authentication**: Required
-- **Functionality**: Manages country information
+   b. **Subscriber ID Verification**
+      - Validates subscriber identity
+      - Failure Condition: Attempt to modify different subscriber
+      - Error Message: "Cannot sign for a different subscriber!"
 
-### Cities
-- **Base Endpoint**: `/cities`
-- **Methods**:
-  - GET `/cities` - List all cities
-  - GET `/cities/{id}` - Get specific city
-  - POST `/cities` - Create city
-  - PUT `/cities/{id}` - Update city
-  - DELETE `/cities/{id}` - Delete city
-- **Authentication**: Required
-- **Functionality**: Manages city information
+   c. **Key Management**
+      - Checks:
+        - Key existence
+        - Key verification status
+        - Key modification permissions
+      - Updates:
+        - Key validity period
+        - Key associations
+      - Failure Conditions:
+        - Attempt to modify verified key
+        - Invalid key parameters
 
-## Verification Services APIs
+   d. **Domain Processing**
+      - Checks:
+        - Domain validity
+        - Subscription status
+        - Key creation restrictions
+      - Updates:
+        - Network role
+        - Subscription status
+        - Region information
+      - Failure Conditions:
+        - Invalid domain
+        - Concurrent key creation and subscription modification
 
-### Domain Verification
-- **Endpoint**: `/claim_requests/{id}/verify_domain`
-- **Method**: POST
-- **Authentication**: Required
-- **Functionality**:
-  - Verifies domain ownership
-  - Checks domain TXT records
-  - Updates verification status
+9. **Response Generation**
+   - Format: JSON response
+   - Content: Updated subscriber information
+   - Variations:
+     - Single subscriber response
+     - Multiple subscriber response
 
-### Document Verification
-- **Endpoints**:
-  - `/submitted_documents/{id}/approve`
-  - `/submitted_documents/{id}/reject`
-  - `/verifiable_documents/{id}/approve`
-  - `/verifiable_documents/{id}/reject`
-- **Method**: POST
-- **Authentication**: Required
-- **Functionality**: Handles document verification and approval/rejection
+##### Error Handling Summary
 
-### Participant Verification
-- **Endpoints**:
-  - `/network_participants/{id}/claim`
-  - `/claim_requests/{id}/verify_domain`
-- **Method**: POST
-- **Authentication**: Required
-- **Functionality**: Manages participant verification and claims
+1. **Authentication Errors**
+   - Missing/invalid authorization header
+   - Invalid signature
+   - Unverified key
 
-## Authentication and Authorization
+2. **Authorization Errors**
+   - Key-subscriber mismatch
+   - Attempt to modify other subscriber's data
 
-Most endpoints require authentication and authorization. The system uses:
-1. Signature verification for subscriber-related operations
-2. Login-based authentication for administrative operations
-3. Role-based access control for different types of operations
+3. **Validation Errors**
+   - Invalid domain
+   - Invalid key modifications
+   - Concurrent operations
 
-## Error Handling
+4. **Business Logic Errors**
+   - Invalid subscription status changes
+   - Invalid key-subscription combinations
 
-The API follows standard HTTP status codes:
-- 200: Success
-- 400: Bad Request
-- 401: Unauthorized
-- 403: Forbidden
-- 404: Not Found
-- 500: Internal Server Error
+##### Security Considerations
 
-## Response Format
+1. **Signature Verification**
+   - All requests must be signed
+   - Signatures must be valid
+   - Keys must be verified
 
-All responses are in JSON format and include:
-- Status code
-- Message (for errors)
-- Data (for successful responses)
+2. **Access Control**
+   - Subscribers can only modify their own data
+   - Keys must be properly associated
+   - Domain ownership must be verified
 
-## Rate Limiting
-
-The API implements rate limiting to prevent abuse. Specific limits are configured based on the endpoint and user role. 
+3. **Data Integrity**
+   - Key modifications are restricted
+   - Status changes are validated
+   - Domain associations are verified
 
 ## Subscribers Subscribe Endpoint Documentation
 
@@ -368,4 +336,171 @@ Content-Type: application/json
 }
 ```
 
-This endpoint is crucial for managing subscriber registrations in the Beckn network, handling both new subscriptions and updates to existing ones while maintaining security through signature verification and key management. 
+This endpoint is crucial for managing subscriber registrations in the Beckn network, handling both new subscriptions and updates to existing ones while maintaining security through signature verification and key management.
+
+### Disable Subscriber
+- **Endpoint**: `/subscribers/disable`
+- **Method**: POST
+- **Authentication**: Requires signature verification
+- **Request Body**: Subscriber details
+- **Response**: Updated subscriber status
+- **Functionality**:
+  - Disables/unsubscribes a subscriber
+  - Verifies the subscriber's signature
+  - Updates subscriber status to UNSUBSCRIBED
+
+### Lookup Subscribers
+- **Endpoint**: `/subscribers/lookup`
+- **Method**: GET
+- **Authentication**: No login required
+- **Query Parameters**: Search criteria
+- **Response**: Matching subscribers
+- **Functionality**:
+  - Searches for subscribers based on criteria
+  - Supports pagination
+  - Returns matching subscribers with their details
+
+### Key Generation
+- **Generate Signature Keys**: `/subscribers/generateSignatureKeys`
+- **Generate Encryption Keys**: `/subscribers/generateEncryptionKeys`
+- **Method**: GET
+- **Authentication**: No login required
+- **Response**: Generated keys
+- **Functionality**: Generates new cryptographic keys for subscribers
+
+## Document Management APIs
+
+### Submitted Documents
+- **Base Endpoint**: `/submitted_documents`
+- **Methods**:
+  - GET `/submitted_documents` - List all submitted documents
+  - GET `/submitted_documents/{id}` - Get specific document
+  - POST `/submitted_documents` - Submit new document
+  - PUT `/submitted_documents/{id}` - Update document
+  - DELETE `/submitted_documents/{id}` - Delete document
+  - POST `/submitted_documents/{id}/approve` - Approve document
+  - POST `/submitted_documents/{id}/reject` - Reject document
+- **Authentication**: Required
+- **Functionality**: Manages document submission and verification
+
+### Verifiable Documents
+- **Base Endpoint**: `/verifiable_documents`
+- **Methods**:
+  - POST `/verifiable_documents/{id}/approve` - Approve document
+  - POST `/verifiable_documents/{id}/reject` - Reject document
+- **Authentication**: Required
+- **Functionality**: Handles document verification and approval/rejection
+
+## Network Management APIs
+
+### Network Domains
+- **Base Endpoint**: `/network_domains`
+- **Methods**:
+  - GET `/network_domains` - List all network domains
+  - GET `/network_domains/{id}` - Get specific domain
+  - POST `/network_domains` - Create domain
+  - PUT `/network_domains/{id}` - Update domain
+  - DELETE `/network_domains/{id}` - Delete domain
+- **Authentication**: Required
+- **Functionality**: Manages network domains
+
+### Network Participants
+- **Base Endpoint**: `/network_participants`
+- **Methods**:
+  - GET `/network_participants` - List all participants
+  - GET `/network_participants/{id}` - Get specific participant
+  - POST `/network_participants` - Create participant
+  - PUT `/network_participants/{id}` - Update participant
+  - DELETE `/network_participants/{id}` - Delete participant
+  - POST `/network_participants/{id}/claim` - Initiate claim request
+- **Authentication**: Required
+- **Functionality**: Manages network participants and their claims
+
+### Claim Requests
+- **Base Endpoint**: `/claim_requests`
+- **Methods**:
+  - POST `/claim_requests/{id}/verify_domain` - Verify domain ownership
+- **Authentication**: Required
+- **Functionality**: Handles domain verification for claims
+
+## Geographic Management APIs
+
+### Countries
+- **Base Endpoint**: `/countries`
+- **Methods**:
+  - GET `/countries` - List all countries
+  - GET `/countries/{id}` - Get specific country
+  - POST `/countries` - Create country
+  - PUT `/countries/{id}` - Update country
+  - DELETE `/countries/{id}` - Delete country
+- **Authentication**: Required
+- **Functionality**: Manages country information
+
+### Cities
+- **Base Endpoint**: `/cities`
+- **Methods**:
+  - GET `/cities` - List all cities
+  - GET `/cities/{id}` - Get specific city
+  - POST `/cities` - Create city
+  - PUT `/cities/{id}` - Update city
+  - DELETE `/cities/{id}` - Delete city
+- **Authentication**: Required
+- **Functionality**: Manages city information
+
+## Verification Services APIs
+
+### Domain Verification
+- **Endpoint**: `/claim_requests/{id}/verify_domain`
+- **Method**: POST
+- **Authentication**: Required
+- **Functionality**:
+  - Verifies domain ownership
+  - Checks domain TXT records
+  - Updates verification status
+
+### Document Verification
+- **Endpoints**:
+  - `/submitted_documents/{id}/approve`
+  - `/submitted_documents/{id}/reject`
+  - `/verifiable_documents/{id}/approve`
+  - `/verifiable_documents/{id}/reject`
+- **Method**: POST
+- **Authentication**: Required
+- **Functionality**: Handles document verification and approval/rejection
+
+### Participant Verification
+- **Endpoints**:
+  - `/network_participants/{id}/claim`
+  - `/claim_requests/{id}/verify_domain`
+- **Method**: POST
+- **Authentication**: Required
+- **Functionality**: Manages participant verification and claims
+
+## Authentication and Authorization
+
+Most endpoints require authentication and authorization. The system uses:
+1. Signature verification for subscriber-related operations
+2. Login-based authentication for administrative operations
+3. Role-based access control for different types of operations
+
+## Error Handling
+
+The API follows standard HTTP status codes:
+- 200: Success
+- 400: Bad Request
+- 401: Unauthorized
+- 403: Forbidden
+- 404: Not Found
+- 500: Internal Server Error
+
+## Response Format
+
+All responses are in JSON format and include:
+- Status code
+- Message (for errors)
+- Data (for successful responses)
+
+## Rate Limiting
+
+The API implements rate limiting to prevent abuse. Specific limits are configured based on the endpoint and user role.
+

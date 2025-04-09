@@ -5,32 +5,48 @@
     <groupId>in.succinct.beckn</groupId>
     <artifactId>registry.plugin</artifactId>
     <version>1.0-SNAPSHOT</version>
-    <name>registry.plugin</name>
+    <n>registry.plugin</n>
     <description>Succinct Plugin for Beckn Registry</description>
-  <url>http://maven.apache.org</url>
-  <licenses>
-    <license>
-      <name>MIT</name>
-      <url>LICENSE.txt</url>
-      <distribution>repo</distribution>
-    </license>
-  </licenses>
-  <scm>
-    <connection>scm:git:git@github.com:venkatramanm/beckn-registry.git</connection>
-    <developerConnection>scm:git:git@github.com:venkatramanm/beckn-registry.git</developerConnection>
-    <url>git@github.com:venkatramanm/beckn-registry.git</url>
-  </scm>
-  <developers>
-    <developer> 
-      <id>venky</id>
-      <name>Venkatraman Mahadevan</name>
-      <email>venkatramanm@yahoo.com</email>
-    </developer>
-  </developers>
+    <url>http://maven.apache.org</url>
+    <licenses>
+        <license>
+            <n>MIT</n>
+            <url>LICENSE.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+    <scm>
+        <connection>scm:git:git@github.com:venkatramanm/beckn-registry.git</connection>
+        <developerConnection>scm:git:git@github.com:venkatramanm/beckn-registry.git</developerConnection>
+        <url>git@github.com:venkatramanm/beckn-registry.git</url>
+    </scm>
+    <developers>
+        <developer>
+            <id>venky</id>
+            <n>Venkatraman Mahadevan</n>
+            <email>venkatramanm@yahoo.com</email>
+        </developer>
+    </developers>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <revision>2.13-SNAPSHOT</revision>
     </properties>
+
+    <repositories>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
+        <repository>
+            <id>central</id>
+            <url>https://repo.maven.apache.org/maven2</url>
+        </repository>
+        <repository>
+            <id>github</id>
+            <url>https://maven.pkg.github.com/venkatramanm/swf-all</url>
+        </repository>
+    </repositories>
+
     <build>
         <plugins>
             <plugin>
@@ -52,14 +68,24 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>com.github.venkatramanm.swf-all</groupId>
+            <groupId>com.github.venkatramanm</groupId>
             <artifactId>swf-plugin-collab</artifactId>
-            <version>[${revision},)</version>
+            <version>2.13-SNAPSHOT</version>
         </dependency>
         <dependency>
-            <groupId>in.succinct.beckn</groupId>
-            <artifactId>sdk</artifactId>
-            <version>[1.2,)</version>
+            <groupId>com.github.beckn</groupId>
+            <artifactId>beckn-protocol-dtos</artifactId>
+            <version>1.2.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk15on</artifactId>
+            <version>1.70</version>
+        </dependency>
+        <dependency>
+            <groupId>com.googlecode.json-simple</groupId>
+            <artifactId>json-simple</artifactId>
+            <version>1.1.1</version>
         </dependency>
     </dependencies>
 </project>
