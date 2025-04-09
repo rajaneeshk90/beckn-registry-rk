@@ -199,3 +199,173 @@ All responses are in JSON format and include:
 ## Rate Limiting
 
 The API implements rate limiting to prevent abuse. Specific limits are configured based on the endpoint and user role. 
+
+## Subscribers Subscribe Endpoint Documentation
+
+## Endpoint Details
+- **URL**: `/subscribers/subscribe`
+- **Method**: POST
+- **Authentication**: Signature verification required
+- **Content-Type**: application/json
+
+## Request Format
+
+### Headers
+```
+Authorization: <signature>
+```
+
+### Request Body
+```json
+{
+    "subscriber_id": "string",
+    "pub_key_id": "string",
+    "subscriber_url": "string",
+    "type": "string",
+    "domain": "string",
+    "domains": ["string"],
+    "signing_public_key": "string",
+    "encr_public_key": "string",
+    "valid_from": "timestamp",
+    "valid_to": "timestamp"
+}
+```
+
+## Functionality
+
+### 1. Authentication & Authorization
+1. Extracts authorization parameters from the "Authorization" header
+2. Verifies the signature using the provided public key
+3. Validates that:
+   - The signing key exists and is verified
+   - The key belongs to the subscriber
+   - The signature is valid
+
+### 2. Request Processing
+1. Parses the JSON payload into a `Subscribers` object
+2. Handles both single subscriber and multiple subscriber requests
+3. For each subscriber:
+   - Validates domain information
+   - Processes key information
+   - Updates or creates network roles
+
+### 3. Key Management
+1. If a new public key is provided:
+   - Creates or updates the key record
+   - Sets validity period
+   - Associates with the network participant
+2. Validates key modifications:
+   - Prevents modification of verified keys
+   - Allows creation of new keys
+
+### 4. Domain Management
+1. Processes domain information:
+   - Handles both single domain and multiple domains
+   - Creates or updates network roles for each domain
+2. Updates subscriber URL if provided
+
+### 5. Status Management
+1. Updates subscriber status:
+   - Sets status to "INITIATED" if changes are made
+   - Triggers async subscription tasks
+2. Loads region information for the subscriber
+
+## Response Format
+
+### Success Response (200 OK)
+```json
+{
+    "subscriber_id": "string",
+    "status": "string",
+    "type": "string",
+    "domain": "string",
+    "domains": ["string"],
+    "subscriber_url": "string"
+}
+```
+
+### Error Responses
+
+1. **Signature Verification Failed (400)**
+```json
+{
+    "error": "Signature Verification failed"
+}
+```
+
+2. **Key Not Verified (400)**
+```json
+{
+    "error": "Your signing key is not verified by the registrar! Please contact registrar or sign with a verified key."
+}
+```
+
+3. **Invalid Subscriber (400)**
+```json
+{
+    "error": "Cannot sign for a different subscriber!"
+}
+```
+
+4. **Key Modification Error (400)**
+```json
+{
+    "error": "Cannot modify a verified registered key. Please create a new key."
+}
+```
+
+5. **Subscription Modification Error (400)**
+```json
+{
+    "error": "Cannot create a new key and modify your subscription in the same call."
+}
+```
+
+## Status Codes
+- `SUBSCRIBER_STATUS_INITIATED`: Initial state after subscription
+- `SUBSCRIBER_STATUS_SUBSCRIBED`: Successfully subscribed
+- `SUBSCRIBER_STATUS_UNSUBSCRIBED`: Unsubscribed state
+
+## Asynchronous Processing
+- Triggers `OnSubscribe` task asynchronously for status changes
+- Handles background processing of subscription tasks
+
+## Security Considerations
+1. Signature verification is mandatory
+2. Key modifications are restricted
+3. Subscriber identity is verified
+4. Domain ownership is validated
+
+## Example Usage
+
+### Request
+```http
+POST /subscribers/subscribe
+Authorization: <signature>
+Content-Type: application/json
+
+{
+    "subscriber_id": "example.com",
+    "pub_key_id": "key-123",
+    "subscriber_url": "https://example.com",
+    "type": "BG",
+    "domain": "example.com",
+    "signing_public_key": "public-key-string",
+    "encr_public_key": "encryption-key-string",
+    "valid_from": "2024-01-01T00:00:00Z",
+    "valid_to": "2025-01-01T00:00:00Z"
+}
+```
+
+### Response
+```json
+{
+    "subscriber_id": "example.com",
+    "status": "INITIATED",
+    "type": "BG",
+    "domain": "example.com",
+    "subscriber_url": "https://example.com"
+}
+```
+
+This endpoint is crucial for managing subscriber registrations in the Beckn network, handling both new subscriptions and updates to existing ones while maintaining security through signature verification and key management. 
