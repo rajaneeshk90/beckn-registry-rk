@@ -21,26 +21,6 @@ how does this API work:
 
 Response: A key Id is generated to identify "the initial keyset (signing and encryption keys)" and is handed over to the subscriber. This key Id is marked as verified.
 
-register API returns a response in this format
-
-```
-{
-    "subscriber_id": "example.com",
-    "subscriber_url": "https://example.com",
-    "status": "INITIATED",
-    "domain": "example.com",
-    "type": "BG",
-    "signing_public_key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA...",
-    "encr_public_key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA...",
-    "pub_key_id": "key-123",
-    "valid_from": "2024-01-01T00:00:00Z",
-    "valid_to": "2025-01-01T00:00:00Z",
-    "city": "Bangalore",
-    "country": "India",
-    "created": "2024-01-01T00:00:00Z",
-    "updated": "2024-01-01T00:00:00Z"
-}
-```
 
 Note: 
     register/ is not an authorized API (it does not require a signature in the request header)
@@ -99,25 +79,6 @@ other flows implemented using /subscribe endpoint
     Invalidating a key
         Pass valid_until to a current  time to expire the key. 
 
-the format of the response is like
-```
-{
-    "subscriber_id": "example.com",
-    "subscriber_url": "https://example.com",
-    "status": "INITIATED",  // or "SUBSCRIBED" after verification
-    "domain": "example.com",
-    "type": "BG",
-    "signing_public_key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA...",
-    "encr_public_key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA...",
-    "pub_key_id": "key-123",
-    "valid_from": "2024-01-01T00:00:00Z",
-    "valid_to": "2025-01-01T00:00:00Z",
-    "city": "Bangalore",
-    "country": "India",
-    "created": "2024-01-01T00:00:00Z",
-    "updated": "2024-01-01T00:00:00Z"
-}
-```
 
 Note: 
     subscribe/ is an authorized API (it require a signature in the request header)
